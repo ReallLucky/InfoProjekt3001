@@ -4,12 +4,58 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="1e95b1d7-c3c1-4380-baa6-406ebeaed774" name="Changes" comment="d">
-      <change afterPath="$PROJECT_DIR$/feedback.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pose_analysis.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+    <list default="true" id="1e95b1d7-c3c1-4380-baa6-406ebeaed774" name="Changes" comment="LSTM Train + app">
+      <change afterPath="$PROJECT_DIR$/Clip Idle/20260425_191739_19.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clip Schulter hinten/20260425_191739.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clip Schulter hinten/20260425_191739_1.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clip Schulter hinten/20260425_191739_2.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clip Schulter hinten/20260425_191739_3.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clip Schulter hinten/20260425_191739_4.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_1.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_10.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_11.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_12.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_13.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_14.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_15.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_16.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_17.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_18.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_2.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_3.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_4.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_40000.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_5.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_6.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_7.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_8.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 1/20260425_191739_9.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_1.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_10.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_11.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_12.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_13.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_14.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_15.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_16.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_2.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_3.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_4.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_5.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_6.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_7.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_8.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Clips Richtig 2/20260425_191739_9.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/bulb.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pose_landmarker_full.task" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/train2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pose_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/pose_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,38 +72,83 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "ReallLucky"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;ReallLucky&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/ReallLucky/InfoProjekt3001.git",
-    "accountId": "8a9959f7-ab59-4e53-929d-0c41c35cb0a3"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/ReallLucky/InfoProjekt3001.git&quot;,
+    &quot;accountId&quot;: &quot;8a9959f7-ab59-4e53-929d-0c41c35cb0a3&quot;
   }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 6
-}]]></component>
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 6
+}</component>
   <component name="ProjectId" id="3CIpc8LWuIJjNA4fW0YLELsGhPN" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.app.executor": "Run",
-    "Python.pose_analysis.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "master",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.pose_analysis.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train.executor&quot;: &quot;Run&quot;,
+    &quot;Python.train2.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/luckyfake/PycharmProjects/InfoProjekt&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/videos_strike1" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/videos_strike2_failed" />
+      <recent name="$PROJECT_DIR$/videos_strike2" />
+      <recent name="$PROJECT_DIR$/videos_strike1_failed" />
+      <recent name="$PROJECT_DIR$/videos_idle" />
+      <recent name="$PROJECT_DIR$/videos_strike1" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="train" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="InfoProjekt" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.train" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -81,11 +172,44 @@
       <option name="project" value="LOCAL" />
       <updated>1776083271390</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="d">
+      <option name="closed" value="true" />
+      <created>1776171529922</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1776171529922</updated>
+    </task>
+    <task id="LOCAL-00003" summary="d">
+      <option name="closed" value="true" />
+      <created>1776172730145</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1776172730145</updated>
+    </task>
+    <task id="LOCAL-00004" summary="d">
+      <option name="closed" value="true" />
+      <created>1776172839435</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1776172839435</updated>
+    </task>
+    <task id="LOCAL-00005" summary="LSTM Train + app">
+      <option name="closed" value="true" />
+      <created>1777383126815</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1777383126815</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="d" />
-    <option name="LAST_COMMIT_MESSAGE" value="d" />
+    <MESSAGE value="LSTM Train + app" />
+    <option name="LAST_COMMIT_MESSAGE" value="LSTM Train + app" />
   </component>
 </project>

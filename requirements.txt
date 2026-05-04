@@ -1,4 +1,7 @@
+joblib
+pandas
 streamlit
-opencv-python-headless
+plotly
+opencv-python
 mediapipe
 numpy

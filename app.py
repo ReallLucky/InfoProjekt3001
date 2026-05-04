@@ -4,505 +4,494 @@ import numpy as np
 import mediapipe as mp
 import joblib
 import tempfile
-import time
-
+import os
 import plotly.graph_objects as go
-import tensorflow as tf
 
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 # =========================
-# CONFIG — must match train.py
+# CONFIG
 # =========================
-WINDOW_SIZE       = 20
-STEP_SIZE         = 5
-ANALYSIS_FPS      = 15
-RESIZE_W, RESIZE_H = 640, 360
-CONFIDENCE_THRESH = 0.55
-
-N_LANDMARKS    = 33
-N_COORDS       = 3
-RAW_FEATURES   = N_LANDMARKS * N_COORDS      # 99
-TOTAL_FEATURES = RAW_FEATURES * 2            # 198
+WINDOW_SIZE = 15
+STEP_SIZE   = 5
+MODEL_PATH  = "pose_landmarker_full.task"
 
 # =========================
-# LOAD ARTIFACTS
+# LOAD MODEL
 # =========================
 @st.cache_resource
-def load_artifacts():
-    model         = tf.keras.models.load_model("eskrima_lstm_model.keras")
+def load_model():
+    knn           = joblib.load("eskrima_knn_model.pkl")
     scaler        = joblib.load("scaler.pkl")
     label_encoder = joblib.load("label_encoder.pkl")
-    return model, scaler, label_encoder
+    return knn, scaler, label_encoder
 
 # =========================
-# MEDIAPIPE — VIDEO MODE
-# One instance per video analysis run.
+# MEDIAPIPE
 # =========================
-def make_landmarker():
-    base_options = python.BaseOptions(model_asset_path="pose_landmarker_full.task")
-    options = vision.PoseLandmarkerOptions(
+@st.cache_resource
+def load_landmarker():
+    base_options = python.BaseOptions(model_asset_path=MODEL_PATH)
+    options      = vision.PoseLandmarkerOptions(
         base_options=base_options,
-        running_mode=vision.RunningMode.VIDEO,
-        min_pose_detection_confidence=0.5,
-        min_pose_presence_confidence=0.5,
-        min_tracking_confidence=0.5,
+        running_mode=vision.RunningMode.IMAGE,
     )
     return vision.PoseLandmarker.create_from_options(options)
 
+# =========================
+# PAGE CONFIG
+# =========================
+st.set_page_config(
+    layout="wide",
+    page_title="Eskrima AI Coach",
+    page_icon=":material/swords:"
+)
+
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap');
+
+[data-testid="stApp"] {
+    background: #08090f;
+    color: #dde2f0;
+}
+
+[data-testid="stSidebar"],
+[data-testid="collapsedControl"] {
+    display: none !important;
+}
+
+h1, h2, h3, h4 {
+    font-family: 'Rajdhani', sans-serif !important;
+    letter-spacing: 0.04em;
+}
+
+/* Tips button */
+div[data-testid="stButton"] button {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: rgba(200,215,255,0.7);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background 0.15s, border-color 0.15s;
+}
+div[data-testid="stButton"] button:hover {
+    background: rgba(60,120,255,0.12);
+    border-color: rgba(60,120,255,0.4);
+    color: #aaccff;
+}
+
+[data-testid="stFileUploader"] section {
+    border: 1.5px dashed rgba(60,120,255,0.35) !important;
+    border-radius: 14px !important;
+    background: rgba(40,80,255,0.04) !important;
+    transition: border-color 0.2s;
+}
+[data-testid="stFileUploader"] section:hover {
+    border-color: rgba(60,120,255,0.65) !important;
+}
+
+[data-testid="stProgress"] > div > div {
+    background: linear-gradient(90deg, #1a5fff, #55aaff) !important;
+    border-radius: 999px !important;
+}
+
+.score-card {
+    background: linear-gradient(135deg, rgba(30,80,200,0.18) 0%, rgba(0,0,0,0) 60%);
+    border: 1px solid rgba(60,120,255,0.2);
+    border-radius: 16px;
+    padding: 26px 30px 22px;
+    margin-bottom: 20px;
+}
+.score-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(140,170,255,0.55);
+    margin-bottom: 4px;
+}
+.score-number {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 4.2rem;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(90deg, #5599ff, #aad4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.score-verdict-ok  { color: #44dd88; font-size: 1rem; font-weight: 600; margin-top: 8px; }
+.score-verdict-bad { color: #ff5544; font-size: 1rem; font-weight: 600; margin-top: 8px; }
+.score-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.73rem;
+    color: rgba(180,200,255,0.3);
+    margin-top: 10px;
+}
+
+.stat-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.stat-pill {
+    flex: 1;
+    min-width: 80px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Rajdhani', sans-serif;
+}
+.stat-pill .sp-val { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.stat-pill .sp-lbl { font-size: 0.72rem; color: rgba(180,200,255,0.4); margin-top: 2px; }
+.stat-ok   .sp-val { color: #44dd88; }
+.stat-err  .sp-val { color: #ff6655; }
+.stat-idle .sp-val { color: #7799dd; }
+
+.section-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(160,185,255,0.5);
+    margin: 20px 0 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding-bottom: 6px;
+}
+
+/* =========================
+   VIDEO FIT SCREEN
+========================= */
+
+[data-testid="stVideo"] {
+    height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: sticky;
+    top: 1rem;
+}
+
+/* wrapper */
+[data-testid="stVideo"] > div {
+    width: 100%;
+    height: 100%;
+}
+
+/* actual video */
+[data-testid="stVideo"] video {
+    width: 100%;
+    height: 100%;
+    max-height: calc(100vh - 120px);
+    object-fit: contain;
+
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: #000;
+
+    display: block;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # =========================
-# NORMALIZATION (identical to train.py)
+# TIPS DIALOG
 # =========================
-def normalize_landmarks(row: np.ndarray) -> np.ndarray:
-    pts           = row.reshape(N_LANDMARKS, N_COORDS)
-    left_hip      = pts[23]
-    right_hip     = pts[24]
-    left_shoulder = pts[11]
-    origin        = (left_hip + right_hip) / 2.0
-    scale         = np.linalg.norm(left_shoulder - origin) + 1e-6
-    return ((pts - origin) / scale).flatten()
+@st.dialog("Tips")
+def tips_dialog():
+    st.markdown("""
+### :material/checklist: Recording tips
+- Film from a **side or 45° angle**
+- Keep your **full body in frame**
+- Use **good, even lighting**
+- Supported formats: mp4, mov, avi
+- 720p or higher recommended
 
+---
+### <span style="color:#aaccff;">:material/label:</span> Labels
 
-def add_velocity(frames: list[np.ndarray]) -> list[np.ndarray]:
-    result = []
-    for i, f in enumerate(frames):
-        vel = frames[i] - frames[i - 1] if i > 0 else np.zeros(RAW_FEATURES)
-        result.append(np.concatenate([f, vel]))
-    return result
+<div style="margin-top:8px; line-height:1.8">
 
+<span style="color:#44dd88;">:material/check_circle:</span>
+<b style="color:#44dd88;"> Correct</b><br>
+
+<span style="color:#ff6655;">:material/cancel:</span>
+<b style="color:#ff6655;"> Too Early</b><br>
+
+<span style="color:#ffaa22;">:material/warning:</span>
+<b style="color:#ffaa22;"> Shoulder Back</b><br>
+
+<span style="color:#7799dd;">:material/pause_circle:</span>
+<b style="color:#7799dd;"> Idle</b>
+
+</div>
+""", unsafe_allow_html=True)
 
 # =========================
-# FRAME EXTRACTION (VIDEO mode)
+# HELPERS
 # =========================
-def extract_frames(video_path: str, progress_cb=None) -> list[np.ndarray]:
+def get_fps(video_path):
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    cap.release()
+    return fps if fps and fps > 1 else 30.0
+
+
+def extract_frames(video_path):
     cap        = cv2.VideoCapture(video_path)
-    total      = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
-    source_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    interval   = max(1, int(round(source_fps / ANALYSIS_FPS)))
-
-    landmarker = make_landmarker()
+    landmarker = load_landmarker()
     frames     = []
-    idx        = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        if idx % interval == 0:
-            small = cv2.resize(frame, (RESIZE_W, RESIZE_H))
-            rgb   = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
-            mp_im = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            ts_ms = int((idx / source_fps) * 1000)
+        rgb      = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result   = landmarker.detect(mp_image)
 
-            result = landmarker.detect_for_video(mp_im, ts_ms)
-            if result.pose_landmarks:
-                lm  = result.pose_landmarks[0]
-                raw = np.array([[p.x, p.y, p.z] for p in lm]).flatten()
-                frames.append(normalize_landmarks(raw))
-
-            if progress_cb:
-                progress_cb(min(idx / total, 0.9))
-
-        idx += 1
+        if result.pose_landmarks:
+            lm  = result.pose_landmarks[0]
+            row = []
+            for p in lm:
+                row.extend([p.x, p.y, p.z])
+            frames.append(row)
 
     cap.release()
-    landmarker.close()
     return frames
 
 
-# =========================
-# INFERENCE
-# =========================
-def run_inference(frames, model, scaler, label_encoder, source_fps):
-    frames_with_vel = add_velocity(frames)
-    sequences       = []
-    frame_indices   = []
+def create_sequences(frames):
+    sequences = []
+    for i in range(0, len(frames) - WINDOW_SIZE, STEP_SIZE):
+        sequences.append(np.array(frames[i:i + WINDOW_SIZE]).flatten())
+    return np.array(sequences)
 
-    for i in range(0, len(frames_with_vel) - WINDOW_SIZE, STEP_SIZE):
-        window = np.array(frames_with_vel[i : i + WINDOW_SIZE])
-        sequences.append(window)
-        frame_indices.append(i)
 
-    if not sequences:
-        return [], [], []
-
-    X = np.array(sequences)                   # (N, WINDOW, FEATURES)
-    N, T, F = X.shape
-    X_flat  = scaler.transform(X.reshape(N, T * F))
-    X       = X_flat.reshape(N, T, F)
-
-    proba      = model.predict(X, batch_size=32, verbose=0)
-    confidence = proba.max(axis=1)
-    pred_idx   = np.argmax(proba, axis=1)
-    labels     = label_encoder.inverse_transform(pred_idx)
-
-    # Convert frame index → timestamp in seconds
-    # frames were sampled at ANALYSIS_FPS, so each frame = 1/ANALYSIS_FPS s
-    timestamps = [fi / ANALYSIS_FPS for fi in frame_indices]
-
-    return labels, timestamps, confidence
+def classify_label(l):
+    if "correct"       in l: return "correct"
+    if "too_early"     in l: return "too_early"
+    if "shoulder_back" in l: return "shoulder_back"
+    return "idle"
 
 
 # =========================
-# SCORING
+# PROCESS (cached by video bytes)
 # =========================
-def compute_score(labels, confidence):
-    correct_windows = sum(
-        1 for l, c in zip(labels, confidence)
-        if "correct" in l and c >= CONFIDENCE_THRESH
-    )
-    counted_windows = sum(
-        1 for c in confidence if c >= CONFIDENCE_THRESH
-    )
-    ratio = correct_windows / counted_windows if counted_windows else 0
-    return round(ratio * 100, 1), ratio
+@st.cache_data(show_spinner=False)
+def process_video(video_bytes):
+    knn, scaler, label_encoder = load_model()
 
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+        tmp.write(video_bytes)
+        path = tmp.name
 
-def describe_errors(labels, timestamps, confidence):
-    """Return list of (timestamp, error_type) for high-confidence errors only."""
-    errors = []
-    for l, t, c in zip(labels, timestamps, confidence):
-        if c < CONFIDENCE_THRESH or "correct" in l or "idle" in l:
-            continue
-        if "too_early" in l:
-            errors.append((t, "Moved too early"))
-        elif "shoulder_back" in l:
-            errors.append((t, "Shoulder pulled back"))
-    # Collapse nearby errors (within 1s) to avoid flooding
-    collapsed = []
-    last_t    = -999
-    for t, msg in errors:
-        if t - last_t > 1.0:
-            collapsed.append((t, msg))
-            last_t = t
-    return collapsed
+    fps    = get_fps(path)
+    frames = extract_frames(path)
+
+    if len(frames) < WINDOW_SIZE:
+        return None, None, fps, path
+
+    sequences = create_sequences(frames)
+    X         = scaler.transform(sequences)
+    preds     = knn.predict(X)
+    labels    = label_encoder.inverse_transform(preds)
+
+    frame_time = STEP_SIZE / fps
+    timestamps = [i * frame_time for i in range(len(labels))]
+
+    return labels, timestamps, fps, path
 
 
 # =========================
-# PLOTTING
+# TIMELINE CHART
 # =========================
-def build_timeline(labels, timestamps, confidence):
-    COLOR_MAP = {
-        "idle":           ("blue",   0.0),
-        "correct":        ("green",  1.0),
-        "too_early":      ("red",   -1.0),
-        "shoulder_back":  ("orange",-0.5),
+def build_chart(labels, timestamps):
+    STYLE = {
+        "correct":       (1.0,  "#44dd88", "Correct"),
+        "too_early":     (-1.0, "#ff5544", "Too Early"),
+        "shoulder_back": (-0.5, "#ffaa22", "Shoulder Back"),
+        "idle":          (0.0,  "#334466", "Idle"),
     }
 
-    colors, values, texts, ts_plot = [], [], [], []
-
-    for l, t, c in zip(labels, timestamps, confidence):
-        if c < CONFIDENCE_THRESH:
-            # Show low-confidence windows as faded gray
-            colors.append("rgba(150,150,150,0.3)")
-            values.append(0)
-            texts.append(f"Low confidence ({c:.0%})")
-        else:
-            matched = next((k for k in COLOR_MAP if k in l), None)
-            col, val = COLOR_MAP.get(matched, ("gray", 0))
-            colors.append(col)
-            values.append(val)
-            texts.append(l.replace("_", " ").title() + f" ({c:.0%})")
-        ts_plot.append(t)
+    values, colors, texts = [], [], []
+    for l in labels:
+        k = classify_label(l)
+        val, col, txt = STYLE[k]
+        values.append(val)
+        colors.append(col)
+        texts.append(txt)
 
     fig = go.Figure()
 
-    # Shaded regions
-    fig.add_hrect(y0=0.7,  y1=1.3,  fillcolor="rgba(0,200,80,0.07)",  line_width=0)
-    fig.add_hrect(y0=-1.3, y1=-0.3, fillcolor="rgba(220,50,50,0.07)", line_width=0)
+    fig.add_hrect(y0=0.6,  y1=1.4,  fillcolor="rgba(50,220,120,0.05)", line_width=0)
+    fig.add_hrect(y0=-1.4, y1=-0.2, fillcolor="rgba(255,80,60,0.05)",  line_width=0)
 
-    # Line
     fig.add_trace(go.Scatter(
-        x=ts_plot, y=values,
+        x=timestamps, y=values,
         mode="lines",
-        line=dict(color="rgba(255,255,255,0.2)", width=1),
+        line=dict(color="rgba(255,255,255,0.08)", width=1.5),
         showlegend=False,
     ))
 
-    # Markers
     fig.add_trace(go.Scatter(
-        x=ts_plot, y=values,
+        x=timestamps, y=values,
         mode="markers",
-        marker=dict(color=colors, size=9, line=dict(width=1, color="white")),
+        marker=dict(color=colors, size=8, line=dict(width=0.8, color="rgba(255,255,255,0.25)")),
         text=texts,
-        hovertemplate="<b>%{text}</b><br>t = %{x:.2f}s<extra></extra>",
+        hovertemplate="<b>%{text}</b><br>t = %{x:.2f} s<extra></extra>",
         showlegend=False,
     ))
 
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="white", family="monospace"),
-        xaxis=dict(title="Time (s)", gridcolor="rgba(255,255,255,0.06)"),
+        font=dict(color="rgba(180,200,255,0.6)", size=11),
+        xaxis=dict(title="Time (s)", gridcolor="rgba(255,255,255,0.04)", zeroline=False),
         yaxis=dict(
             tickvals=[-1, -0.5, 0, 1],
             ticktext=["Too Early", "Shoulder Back", "Idle", "Correct"],
-            gridcolor="rgba(255,255,255,0.06)",
+            gridcolor="rgba(255,255,255,0.04)",
+            zeroline=False,
+            range=[-1.5, 1.5],
         ),
-        margin=dict(l=10, r=10, t=10, b=40),
-        height=320,
+        margin=dict(l=10, r=10, t=6, b=36),
+        height=280,
     )
-
     return fig
 
 
 # =========================
-# PAGE CONFIG + STYLE
-# =========================
-st.set_page_config(layout="wide", page_title="Eskrima AI Coach")
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
-
-html, body, [data-testid="stApp"] {
-    background: #07080f;
-    color: #e8eaf0;
-}
-
-[data-testid="stApp"] {
-    background:
-        radial-gradient(ellipse 80% 40% at 50% 100%, rgba(0,120,255,0.12), transparent),
-        radial-gradient(ellipse 40% 60% at 90% 10%, rgba(255,60,0,0.06), transparent),
-        #07080f;
-}
-
-h1, h2, h3 {
-    font-family: 'Rajdhani', sans-serif !important;
-    letter-spacing: 0.05em;
-}
-
-code, .mono { font-family: 'Share Tech Mono', monospace; }
-
-/* Score box */
-.score-box {
-    background: linear-gradient(135deg, rgba(0,120,255,0.15), rgba(0,0,0,0));
-    border: 1px solid rgba(0,120,255,0.3);
-    border-radius: 12px;
-    padding: 24px 28px;
-    margin-bottom: 20px;
-    font-family: 'Rajdhani', sans-serif;
-}
-.score-number {
-    font-size: 4rem;
-    font-weight: 700;
-    line-height: 1;
-    background: linear-gradient(90deg, #4af, #07f);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.verdict-ok  { color: #3f9; font-size: 1.2rem; font-weight: 600; }
-.verdict-bad { color: #f54; font-size: 1.2rem; font-weight: 600; }
-
-/* Error item */
-.error-item {
-    background: rgba(220,50,50,0.08);
-    border-left: 3px solid #f54;
-    border-radius: 4px;
-    padding: 8px 14px;
-    margin: 6px 0;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.85rem;
-}
-
-/* Upload zone */
-[data-testid="stFileUploader"] {
-    border: 1px dashed rgba(0,120,255,0.35) !important;
-    border-radius: 12px;
-    background: rgba(0,120,255,0.04) !important;
-}
-
-/* Progress bar */
-[data-testid="stProgress"] > div > div {
-    background: linear-gradient(90deg, #07f, #4af) !important;
-}
-
-/* Metric */
-[data-testid="metric-container"] {
-    background: rgba(255,255,255,0.03);
-    border-radius: 8px;
-    padding: 12px;
-}
-
-video {
-    width: 100%;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
-}
-</style>
-""", unsafe_allow_html=True)
-
-# =========================
 # HEADER
 # =========================
-st.markdown("# 🥋 Eskrima AI Coach")
-st.markdown(
-    "<span style='opacity:.5;font-size:.9rem'>Upload a strike video — the model will analyze "
-    "your form frame-by-frame and score your execution.</span>",
-    unsafe_allow_html=True
-)
-st.markdown("---")
+title_col, tips_col = st.columns([8, 1])
 
-# =========================
-# SIDEBAR — tips
-# =========================
-with st.sidebar:
-    st.markdown("### 📋 Recording tips")
-    st.markdown("""
-- Film from a **side or 45° angle**
-- Keep your **full body visible**
-- Ensure **good lighting** (avoid backlight)
-- Supported: `mp4`, `mov`, `avi`
-- Best results: 720p or higher
-    """)
-    st.markdown("### 🏷️ What the model detects")
-    st.markdown("""
-| Label | Meaning |
-|---|---|
-| ✅ Correct | Proper form |
-| ❌ Too Early | Premature movement |
-| ⚠️ Shoulder Back | Shoulder pulled behind hip |
-| ⬜ Idle | No strike detected |
-    """)
+with title_col:
+    st.markdown("# :material/swords: Eskrima AI Coach")
+    st.markdown(
+        "<p style='color:rgba(180,200,255,0.4);font-size:.9rem;margin-top:-10px;margin-bottom:20px'>"
+        "Upload a strike clip — the model scores your form frame by frame."
+        "</p>",
+        unsafe_allow_html=True,
+    )
+
+with tips_col:
+    st.markdown("<div style='margin-top:14px'>", unsafe_allow_html=True)
+    if st.button(
+            "Tips",
+            icon=":material/lightbulb:",
+            use_container_width=True
+    ):
+        tips_dialog()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # =========================
 # UPLOAD
 # =========================
-uploaded = st.file_uploader(
+uploaded_file = st.file_uploader(
     "Upload your strike video",
     type=["mp4", "mov", "avi"],
-    help="Keep the clip focused on one or two strikes for best results."
+    label_visibility="collapsed",
 )
 
-if uploaded:
-    model, scaler, label_encoder = load_artifacts()
+# =========================
+# PROCESS & CACHE IN SESSION STATE
+# =========================
+if uploaded_file:
+    video_bytes = uploaded_file.read()
+    file_id     = uploaded_file.file_id
 
-    video_bytes = uploaded.read()
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
-        tmp.write(video_bytes)
-        video_path = tmp.name
-
-    # =========================
-    # PROGRESS PROCESSING
-    # =========================
-    status      = st.empty()
-    progress_bar = st.progress(0)
-
-    status.markdown("⏳ **Extracting pose landmarks…**")
-
-    def progress_cb(v):
-        progress_bar.progress(v)
-
-    t0     = time.time()
-    frames = extract_frames(video_path, progress_cb=progress_cb)
-
-    status.markdown("🧠 **Running LSTM inference…**")
-    progress_bar.progress(0.92)
-
-    cap     = cv2.VideoCapture(video_path)
-    src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    cap.release()
-
-    if len(frames) < WINDOW_SIZE:
+    if st.session_state.get("file_id") != file_id:
+        progress_bar = st.progress(0, text="Analysing video…")
+        labels, timestamps, fps, video_path = process_video(video_bytes)
+        progress_bar.progress(1.0, text="Done!")
         progress_bar.empty()
-        status.error(
-            f"⚠️ Only {len(frames)} frames detected — not enough for analysis. "
-            "Check lighting and ensure your full body is visible."
+
+        st.session_state.file_id     = file_id
+        st.session_state.labels      = labels
+        st.session_state.timestamps  = timestamps
+        st.session_state.fps         = fps
+        st.session_state.video_path  = video_path
+        st.session_state.video_bytes = video_bytes  # ← store bytes for recovery
+
+    # Restore temp file if the OS deleted it between reruns
+    if not os.path.exists(st.session_state.video_path):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
+            tmp.write(st.session_state.video_bytes)
+            st.session_state.video_path = tmp.name
+
+# Render from session state so Tips button reruns don't wipe the UI
+if st.session_state.get("labels") is not None and uploaded_file:
+
+    labels     = st.session_state.labels
+    timestamps = st.session_state.timestamps
+    fps        = st.session_state.fps
+    video_path = st.session_state.video_path
+
+    if labels is None:
+        st.error(
+            "⚠️ Not enough pose data detected. Make sure your full body is visible "
+            "and the lighting is adequate.",
+            icon=":material/block:",
         )
         st.stop()
 
-    labels, timestamps, confidence = run_inference(frames, model, scaler, label_encoder, src_fps)
-    elapsed = time.time() - t0
+    # ── Scoring ──────────────────────────────────
+    total         = len(labels)
+    correct_count = sum("correct"        in l for l in labels)
+    error_count   = sum("too_early"      in l or "shoulder_back" in l for l in labels)
+    idle_count    = sum(classify_label(l) == "idle" for l in labels)
+    correct_ratio = correct_count / total if total else 0
+    score         = round(correct_ratio * 100, 1)
 
-    progress_bar.progress(1.0)
-    status.empty()
-    progress_bar.empty()
+    verdict_class = "score-verdict-ok"  if correct_ratio >= 0.5 else "score-verdict-bad"
+    verdict_text = """
+    <span style="display:flex;align-items:center;gap:6px;">
+        <span style="color:#44dd88;">●</span>
+        Good execution
+    </span>
+    """ if correct_ratio >= 0.5 else """
+<span style="display:flex;align-items:center;gap:6px;">
+    <span style="color:#ff5544;">●</span>
+    Needs improvement
+</span>
+"""
 
-    # =========================
-    # COMPUTE RESULTS
-    # =========================
-    score, ratio  = compute_score(labels, confidence)
-    errors        = describe_errors(labels, timestamps, confidence)
-    verdict_html  = (
-        f"<span class='verdict-ok'>✅ Good execution</span>"
-        if ratio >= 0.5 else
-        f"<span class='verdict-bad'>❌ Needs improvement</span>"
-    )
-
-    # =========================
-    # LAYOUT (CLEAN VERSION)
-    # =========================
-    left, right = st.columns([1.1, 0.9], gap="large")
+    # ── Layout ───────────────────────────────────
+    left, right = st.columns([1, 1], gap="large")
 
     with left:
-        # SCORE CARD
+        # Score card
         st.markdown(f"""
-    <div class="score-box">
-      <div style="opacity:.6;font-size:.85rem;margin-bottom:4px">
-        EXECUTION SCORE
-      </div>
-      <div class="score-number">{score}%</div>
-      <div style="margin-top:8px">{verdict_html}</div>
-      <div style="margin-top:6px;opacity:.45;font-size:.8rem">
-        {len(labels)} analyzed windows ·
-        {sum(c >= CONFIDENCE_THRESH for c in confidence)} high-confidence
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+<div class="score-card">
+  <div class="score-label">Execution score</div>
+  <div class="score-number">{score}%</div>
+  <div class="{verdict_class}">{verdict_text}</div>
+  <div class="score-meta">{total} windows &nbsp;·&nbsp; source {fps:.0f} fps</div>
+</div>""", unsafe_allow_html=True)
 
-        # QUICK STATS ONLY
-        st.markdown("### 📊 Breakdown")
+        # Stat pills
+        correct_pct = round(correct_count / total * 100) if total else 0
+        error_pct   = round(error_count   / total * 100) if total else 0
 
-        m1, m2, m3 = st.columns(3)
+        st.markdown(f"""
+<div class="stat-row">
+  <div class="stat-pill stat-ok">
+    <div class="sp-val">{correct_pct}%</div>
+    <div class="sp-lbl">Correct</div>
+  </div>
+  <div class="stat-pill stat-err">
+    <div class="sp-val">{error_pct}%</div>
+    <div class="sp-lbl">Errors</div>
+  </div>
+</div>""", unsafe_allow_html=True)
 
-        correct_pct = sum("correct" in l for l in labels) / max(len(labels), 1) * 100
-        error_pct = sum("too_early" in l or "shoulder_back" in l for l in labels) / max(len(labels), 1) * 100
-        avg_conf = np.mean(confidence) * 100 if len(confidence) else 0
-
-        m1.metric("Correct", f"{correct_pct:.0f}%")
-        m2.metric("Errors", f"{error_pct:.0f}%")
-        m3.metric("Confidence", f"{avg_conf:.0f}%")
-
-        # TIMELINE ONLY (MAIN VISUAL)
-        st.markdown("### ⏱️ Movement Timeline")
-        fig = build_timeline(labels, timestamps, confidence)
-        st.plotly_chart(fig, use_container_width=True)
+        # Timeline
+        st.markdown('<div class="section-title">Movement timeline</div>', unsafe_allow_html=True)
+        st.plotly_chart(build_chart(labels, timestamps), use_container_width=True)
 
     with right:
-        st.markdown("### 🎥 Video Analysis")
-
-        # Responsive video container (fills column cleanly)
-        st.markdown(
-            """
-            <style>
-            video {
-                width: 100% !important;
-                height: auto !important;
-                max-height: 75vh;
-                border-radius: 12px;
-                border: 1px solid rgba(255,255,255,0.08);
-                object-fit: contain;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
+        st.markdown('<div class="section-title">Your video</div>', unsafe_allow_html=True)
         st.video(video_path)
-
-        st.markdown("""
-        <div style="
-            margin-top:12px;
-            padding:12px;
-            background:rgba(255,255,255,0.03);
-            border-radius:10px;
-            font-size:0.85rem;
-            opacity:0.8;
-        ">
-        💡 Tip: Best results come from side-angle recordings with full body visibility.
-        </div>
-        """, unsafe_allow_html=True)
