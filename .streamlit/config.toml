@@ -1,0 +1,7 @@
+[theme]
+base="dark"
+font = "sans serif"
+
+[server]
+headless = true
+runOnSave = true

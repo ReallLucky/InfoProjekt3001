@@ -39,9 +39,9 @@ def load_landmarker():
     )
     return vision.PoseLandmarker.create_from_options(options)
 
-# =========================
+# ==========================
 # PAGE CONFIG
-# =========================
+# ==========================
 st.set_page_config(
     layout="wide",
     page_title="Eskrima AI Coach",
@@ -50,11 +50,39 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+
+/* ===== Hide Streamlit Top Bar / Toolbar ===== */
+header {
+    visibility: hidden;
+    height: 0px;
+}
+
+/* Hide hamburger menu */
+#MainMenu {
+    visibility: hidden;
+}
+
+/* Hide footer */
+footer {
+    visibility: hidden;
+}
+
+/* Remove top padding */
+.block-container {
+    padding-top: 1rem;
+}
+
+/* Optional: remove deploy button spacing */
+[data-testid="stToolbar"] {
+    display: none;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap');
 
 [data-testid="stApp"] {
     background: #08090f;
     color: #dde2f0;
+    font-family: 'Rajdhani', sans-serif;
 }
 
 [data-testid="stSidebar"],
@@ -100,6 +128,10 @@ div[data-testid="stButton"] button:hover {
     border-radius: 999px !important;
 }
 
+[data-testid="stProgress"] {
+    text-align: center;
+}
+
 .score-card {
     background: linear-gradient(135deg, rgba(30,80,200,0.18) 0%, rgba(0,0,0,0) 60%);
     border: 1px solid rgba(60,120,255,0.2);
@@ -108,7 +140,7 @@ div[data-testid="stButton"] button:hover {
     margin-bottom: 20px;
 }
 .score-label {
-    font-family: 'Share Tech Mono', monospace;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -116,7 +148,7 @@ div[data-testid="stButton"] button:hover {
     margin-bottom: 4px;
 }
 .score-number {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: 'Rajdhani', sans-serif !important;
     font-size: 4.2rem;
     font-weight: 700;
     line-height: 1;
@@ -127,7 +159,7 @@ div[data-testid="stButton"] button:hover {
 .score-verdict-ok  { color: #44dd88; font-size: 1rem; font-weight: 600; margin-top: 8px; }
 .score-verdict-bad { color: #ff5544; font-size: 1rem; font-weight: 600; margin-top: 8px; }
 .score-meta {
-    font-family: 'Share Tech Mono', monospace;
+    font-family: 'Rajdhani', sans-serif;
     font-size: 0.73rem;
     color: rgba(180,200,255,0.3);
     margin-top: 10px;
@@ -143,7 +175,7 @@ div[data-testid="stButton"] button:hover {
     padding: 10px 14px;
     font-family: 'Rajdhani', sans-serif;
 }
-.stat-pill .sp-val { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.stat-pill .sp-val { font-size: 1.5rem; font-weight: 700; line-height: 1.1; font-family: 'Rajdhani', sans-serif !important; }
 .stat-pill .sp-lbl { font-size: 0.72rem; color: rgba(180,200,255,0.4); margin-top: 2px; }
 .stat-ok   .sp-val { color: #44dd88; }
 .stat-err  .sp-val { color: #ff6655; }
@@ -158,6 +190,10 @@ div[data-testid="stButton"] button:hover {
     margin: 20px 0 10px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
     padding-bottom: 6px;
+}
+
+b {
+    font-family: 'Rajdhani', sans-serif;
 }
 
 /* =========================
@@ -238,10 +274,13 @@ def get_fps(video_path):
     return fps if fps and fps > 1 else 30.0
 
 
-def extract_frames(video_path):
+def extract_frames(video_path, progress_placeholder, start_progress):
     cap        = cv2.VideoCapture(video_path)
     landmarker = load_landmarker()
     frames     = []
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    progress_range = 0.6  # from 0.2 to 0.8
+    i = 0
 
     while cap.isOpened():
         ret, frame = cap.read()
@@ -258,6 +297,11 @@ def extract_frames(video_path):
             for p in lm:
                 row.extend([p.x, p.y, p.z])
             frames.append(row)
+
+        i += 1
+        if total_frames > 0:
+            progress = start_progress + (i / total_frames) * progress_range
+            progress_placeholder.progress(progress, text=" Extracting poses… ")
 
     cap.release()
     return frames
@@ -280,28 +324,32 @@ def classify_label(l):
 # =========================
 # PROCESS (cached by video bytes)
 # =========================
-@st.cache_data(show_spinner=False)
-def process_video(video_bytes):
+def process_video(video_bytes, progress_placeholder):
+    progress_placeholder.progress(0, text=" Analysing video… ")
     knn, scaler, label_encoder = load_model()
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp:
         tmp.write(video_bytes)
         path = tmp.name
 
-    fps    = get_fps(path)
-    frames = extract_frames(path)
+    progress_placeholder.progress(0.1, text=" Preparing video… ")
+    fps = get_fps(path)
+    progress_placeholder.progress(0.2, text=" Extracting poses… ")
+    frames = extract_frames(path, progress_placeholder, 0.2)
 
     if len(frames) < WINDOW_SIZE:
         return None, None, fps, path
 
+    progress_placeholder.progress(0.8, text=" Classifying… ")
     sequences = create_sequences(frames)
-    X         = scaler.transform(sequences)
-    preds     = knn.predict(X)
-    labels    = label_encoder.inverse_transform(preds)
+    X = scaler.transform(sequences)
+    preds = knn.predict(X)
+    labels = label_encoder.inverse_transform(preds)
 
     frame_time = STEP_SIZE / fps
     timestamps = [i * frame_time for i in range(len(labels))]
 
+    progress_placeholder.progress(1.0, text=" Done! ")
     return labels, timestamps, fps, path
 
 
@@ -348,7 +396,7 @@ def build_chart(labels, timestamps):
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="rgba(180,200,255,0.6)", size=11),
+        font=dict(color="rgba(180,200,255,0.6)", size=11, family='Rajdhani, sans-serif'),
         xaxis=dict(title="Time (s)", gridcolor="rgba(255,255,255,0.04)", zeroline=False),
         yaxis=dict(
             tickvals=[-1, -0.5, 0, 1],
@@ -404,10 +452,9 @@ if uploaded_file:
     file_id     = uploaded_file.file_id
 
     if st.session_state.get("file_id") != file_id:
-        progress_bar = st.progress(0, text="Analysing video…")
-        labels, timestamps, fps, video_path = process_video(video_bytes)
-        progress_bar.progress(1.0, text="Done!")
-        progress_bar.empty()
+        progress_placeholder = st.empty()
+        labels, timestamps, fps, video_path = process_video(video_bytes, progress_placeholder)
+        progress_placeholder.empty()
 
         st.session_state.file_id     = file_id
         st.session_state.labels      = labels
